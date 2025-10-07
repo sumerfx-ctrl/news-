@@ -1,52 +1,57 @@
+import os
+import re
+import requests
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
-import requests
-import os
 
-BOT_TOKEN = os.environ.get("7744954739:AAEjKgrvYmBQhqsyD4hXIfiwRCP8TO2l1Zc")  # ضع توكن البوت في متغير البيئة
-SERVER_BASE = os.environ.get("SERVER_BASE", "http://localhost:8000")  # رابط السيرفر
+# متغير البيئة BOT_TOKEN
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise ValueError("Please set BOT_TOKEN environment variable")
 
+# قاعدة بيانات بسيطة للتجربة (يمكن استبدال SQLite لاحقًا)
+FEEDS = {}
+
+# --- أوامر البوت ---
 def start(update: Update, context: CallbackContext):
-    update.message.reply_text("مرحبًا! استخدم /addfeed <رابط قناة> لإضافة feed.")
+    update.message.reply_text(
+        "مرحبًا! استخدم /add <رابط قناة> لإضافة feed.\n"
+        "استخدم /list لعرض القنوات."
+    )
 
-def addfeed(update: Update, context: CallbackContext):
+def add_feed(update: Update, context: CallbackContext):
     if not context.args:
         update.message.reply_text("أرسل رابط القناة بعد الأمر.")
         return
-    src = context.args[0]
-    try:
-        r = requests.post(f"{SERVER_BASE}/api/feeds", json={
-            "source": src,
-            "owner": update.effective_user.id
-        }, timeout=15)
-        if r.status_code == 201:
-            data = r.json()
-            update.message.reply_text(f"Feed تم إنشاؤه: {SERVER_BASE}/rss/{data['slug']}.xml")
-        else:
-            update.message.reply_text(f"خطأ: {r.text}")
-    except Exception as e:
-        update.message.reply_text(f"خطأ في الاتصال بالسيرفر: {e}")
+    channel_url = context.args[0]
+    feed_id = str(len(FEEDS) + 1)
+    FEEDS[feed_id] = {
+        "url": channel_url,
+        "replacements": [],  # [{'pattern':'Bitcoin','replacement':'BTC'}]
+        "blacklist": [],     # ['spam','forbidden']
+        "header": "",
+        "footer": "",
+        "display_mode": "title_details"
+    }
+    update.message.reply_text(f"Feed تم إضافته: {channel_url} (ID: {feed_id})")
 
-def listfeeds(update: Update, context: CallbackContext):
-    try:
-        r = requests.get(f"{SERVER_BASE}/api/feeds?owner={update.effective_user.id}", timeout=15)
-        feeds = r.json()
-        if not feeds:
-            update.message.reply_text("لا توجد feeds")
-            return
-        text = "\n".join([f"{f['id']}: {f['source']} -> /rss/{f['slug']}.xml" for f in feeds])
-        update.message.reply_text(text)
-    except Exception as e:
-        update.message.reply_text(f"خطأ في الاتصال بالسيرفر: {e}")
+def list_feeds(update: Update, context: CallbackContext):
+    if not FEEDS:
+        update.message.reply_text("لا توجد feeds مضافة.")
+        return
+    text = "\n".join([f"{fid}: {f['url']}" for fid, f in FEEDS.items()])
+    update.message.reply_text(text)
 
+# --- إعداد البوت ---
 def main():
     updater = Updater(BOT_TOKEN)
     dp = updater.dispatcher
-    dp.add_handler(CommandHandler('start', start))
-    dp.add_handler(CommandHandler('addfeed', addfeed))
-    dp.add_handler(CommandHandler('listfeeds', listfeeds))
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("add", add_feed))
+    dp.add_handler(CommandHandler("list", list_feeds))
+
     updater.start_polling()
     updater.idle()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
