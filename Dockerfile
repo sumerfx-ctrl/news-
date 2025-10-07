@@ -11,5 +11,5 @@ ENV PORT 8000
 
 EXPOSE 8000
 
-# تشغيل السيرفر + البوت معاً في نفس الحاوية (يمكن تعديل لاحقًا)
-CMD ["sh", "-c", "python server.py & python bot.py"]
+# تشغيل السيرفر + البوت (main.py) معاً
+CMD ["sh", "-c", "python server.py & python main.py"]
