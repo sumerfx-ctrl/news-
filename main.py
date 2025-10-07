@@ -3,7 +3,7 @@ from telegram.ext import Updater, CommandHandler, CallbackContext
 import requests
 import os
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN")  # ضع توكن البوت في متغير البيئة
+BOT_TOKEN = os.environ.get("7744954739:AAEjKgrvYmBQhqsyD4hXIfiwRCP8TO2l1Zc")  # ضع توكن البوت في متغير البيئة
 SERVER_BASE = os.environ.get("SERVER_BASE", "http://localhost:8000")  # رابط السيرفر
 
 def start(update: Update, context: CallbackContext):
