@@ -1,1 +1,1 @@
-worker: python your_bot_file_name.py
+worker: python rss_scraper_bot.py
